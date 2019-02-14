@@ -159,7 +159,7 @@ class RCTree:
             else:
                 i = self.index_labels[i]
                 self.leaves[i] = leaf
-        
+                return
         # Increment depth as we traverse down
         depth += 1
         # Create a cut according to definition 1
