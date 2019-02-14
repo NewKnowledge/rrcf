@@ -142,6 +142,24 @@ class RCTree:
         return S1, S2, child
 
     def _mktree(self, X, S, N, I, parent=None, side='root', depth=0):
+        # First check if S only contains one point
+        if S.sum() is 1:
+            # Create a leaf node from isolated point
+            i = np.asscalar(np.flatnonzero(S))
+            # TODO: Leaf label is broken
+            leaf = Leaf(i=i, d=depth, u=None, x=X[i, :], n=N[i])
+            # If duplicates exist...
+            if I is not None:
+                # Add a key in the leaves dict pointing to leaf for all duplicate indices
+                J = np.flatnonzero(I == i)
+                # Get index label
+                J = self.index_labels[J]
+                for j in J:
+                    self.leaves[j] = leaf
+            else:
+                i = self.index_labels[i]
+                self.leaves[i] = leaf
+        
         # Increment depth as we traverse down
         depth += 1
         # Create a cut according to definition 1
