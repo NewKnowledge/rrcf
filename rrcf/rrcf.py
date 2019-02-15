@@ -77,7 +77,6 @@ class RCTree:
             self.ndim = d
             # Set node above to None in case of bottom-up search
             self.u = None
-            # Create RRC Tree
             S = np.ones(n, dtype=np.bool)
             self._mktree(X, S, N, I, parent=self)
             # Remove parent of root
@@ -143,11 +142,12 @@ class RCTree:
 
     def _mktree(self, X, S, N, I, parent=None, side='root', depth=0):
         # First check if S only contains one point
-        if S.sum() is 1:
+        if S.sum() == 1:
             # Create a leaf node from isolated point
             i = np.asscalar(np.flatnonzero(S))
             # TODO: Leaf label is broken
             leaf = Leaf(i=i, d=depth, u=None, x=X[i, :], n=N[i])
+            setattr(parent, side, leaf)
             # If duplicates exist...
             if I is not None:
                 # Add a key in the leaves dict pointing to leaf for all duplicate indices
@@ -159,7 +159,7 @@ class RCTree:
             else:
                 i = self.index_labels[i]
                 self.leaves[i] = leaf
-                return
+            return 
         # Increment depth as we traverse down
         depth += 1
         # Create a cut according to definition 1
