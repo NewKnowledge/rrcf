@@ -302,8 +302,8 @@ class RCTree:
             del parent
             # Set sibling as new root
             sibling.u = None
-            if isinstance(sibling, Leaf):
-                sibling.d = 0
+            #if isinstance(sibling, Leaf):
+                #sibling.d = 0
             self.root = sibling
             # Update depths
             self.map_leaves(sibling, op=self._increment_depth, inc=-1)
@@ -360,6 +360,7 @@ class RCTree:
         x = np.random.randn(2)
         tree.insert_point(x, index=0)
         """
+
         if not isinstance(point, np.ndarray):
             point = np.asarray(point)
         point = point.ravel()
@@ -513,6 +514,9 @@ class RCTree:
         if leaf is self.root:
             return 0
         node = leaf
+        #print('leaf {}'.format(node))
+        #print('leaf depth {}'.format(node.d))
+        #print('leaf root ? {}'.format(node is self.root))
         results = []
         for _ in range(node.d):
             parent = node.u
