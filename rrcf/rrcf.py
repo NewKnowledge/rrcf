@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class RCTree:
     """
     Robust random cut tree data structure as described in:
@@ -40,16 +41,21 @@ class RCTree:
 
     Example:
     --------
-    X = np.random.randn(100,2)
-    tree = RCTree(X)
+    # Create RCTree
+    >>> X = np.random.randn(100,2)
+    >>> tree = RCTree(X)
+
     # Insert a point
-    x = np.random.randn(2)
-    tree.insert_point(x, index=100)
+    >>> x = np.random.randn(2)
+    >>> tree.insert_point(x, index=100)
+
     # Compute collusive displacement of new point (anomaly score)
-    tree.codisp(100)
+    >>> tree.codisp(100)
+
     # Remove point
-    tree.forget_point(100)
+    >>> tree.forget_point(100)
     """
+
     def __init__(self, X=None, index_labels=None, precision=9):
         # Initialize dict for leaves
         self.leaves = {}
@@ -64,7 +70,8 @@ class RCTree:
                 index_labels = np.arange(X.shape[0], dtype=int)
             self.index_labels = index_labels
             # Check for duplicates
-            U, I, N = np.unique(X, return_inverse=True, return_counts=True, axis=0)
+            U, I, N = np.unique(X, return_inverse=True, return_counts=True,
+                                axis=0)
             # If duplicates exist, take unique elements
             if N.max() > 1:
                 n, d = U.shape
@@ -130,7 +137,7 @@ class RCTree:
         # Determine value for split
         p = np.random.uniform(xmin[q], xmax[q])
         # Determine subset of points to left
-        S1 = (X[:,q] <= p) & (S)
+        S1 = (X[:, q] <= p) & (S)
         # Determine subset of points to right
         S2 = (~S1) & (S)
         # Create new child node
@@ -172,7 +179,6 @@ class RCTree:
         else:
             # Create a leaf node from isolated point
             i = np.asscalar(np.flatnonzero(S1))
-            # TODO: Leaf label is broken
             leaf = Leaf(i=i, d=depth, u=branch, x=X[i, :], n=N[i])
             # Link leaf node to parent
             branch.l = leaf
@@ -195,7 +201,6 @@ class RCTree:
         else:
             # Create a leaf node from isolated point
             i = np.asscalar(np.flatnonzero(S2))
-            # TODO: Leaf label is broken
             leaf = Leaf(i=i, d=depth, u=branch, x=X[i, :], n=N[i])
             # Link leaf node to parent
             branch.r = leaf
@@ -223,6 +228,28 @@ class RCTree:
         op: function to call on each leaf
         *args: positional arguments to op
         **kwargs: keyword arguments to op
+
+        Returns:
+        --------
+        None
+
+        Example:
+        --------
+        # Use map_leaves to print leaves in postorder
+        >>> X = np.random.randn(10, 2)
+        >>> tree = RCTree(X)
+        >>> tree.map_leaves(tree.root, op=print)
+
+        Leaf(5)
+        Leaf(9)
+        Leaf(4)
+        Leaf(0)
+        Leaf(6)
+        Leaf(2)
+        Leaf(3)
+        Leaf(7)
+        Leaf(1)
+        Leaf(8)
         """
         if isinstance(node, Branch):
             if node.l:
@@ -242,6 +269,30 @@ class RCTree:
         op: function to call on each branch
         *args: positional arguments to op
         **kwargs: keyword arguments to op
+
+        Returns:
+        --------
+        None
+
+        Example:
+        --------
+        # Use map_branches to collect all branches in a list
+        >>> X = np.random.randn(10, 2)
+        >>> tree = RCTree(X)
+        >>> branches = []
+        >>> tree.map_branches(tree.root, op=(lambda x, stack: stack.append(x)),
+                            stack=branches)
+        >>> branches
+
+        [Branch(q=0, p=-0.53),
+        Branch(q=0, p=-0.35),
+        Branch(q=1, p=-0.67),
+        Branch(q=0, p=-0.15),
+        Branch(q=0, p=0.23),
+        Branch(q=1, p=0.29),
+        Branch(q=1, p=1.31),
+        Branch(q=0, p=0.62),
+        Branch(q=1, p=0.86)]
         """
         if isinstance(node, Branch):
             if node.l:
@@ -266,17 +317,20 @@ class RCTree:
 
         Example:
         --------
-        tree = RCTree()
+        # Create RCTree
+        >>> tree = RCTree()
+
         # Insert a point
-        x = np.random.randn(2)
-        tree.insert_point(x, index=0)
+        >>> x = np.random.randn(2)
+        >>> tree.insert_point(x, index=0)
+
         # Forget point
-        tree.forget_point(0)
+        >>> tree.forget_point(0)
         """
         try:
             # Get leaf from leaves dict
             leaf = self.leaves[index]
-        except:
+        except KeyError:
             raise KeyError('Leaf must be a key to self.leaves')
         # If duplicate points exist...
         if leaf.n > 1:
@@ -355,10 +409,12 @@ class RCTree:
 
         Example:
         --------
-        tree = RCTree()
+        # Create RCTree
+        >>> tree = RCTree()
+
         # Insert a point
-        x = np.random.randn(2)
-        tree.insert_point(x, index=0)
+        >>> x = np.random.randn(2)
+        >>> tree.insert_point(x, index=0)
         """
 
         if not isinstance(point, np.ndarray):
@@ -372,13 +428,14 @@ class RCTree:
             return leaf
         # If leaves already exist in tree, check dimensions of point
         try:
-            assert(point.size == self.ndim)
-        except:
-            raise ValueError("Point must be same dimension as existing points in tree.")
+            assert (point.size == self.ndim)
+        except ValueError:
+            raise ValueError(
+                "Point must be same dimension as existing points in tree.")
         # Check for existing index in leaves dict
         try:
-            assert(not index in self.leaves)
-        except:
+            assert (index not in self.leaves)
+        except KeyError:
             raise KeyError("Index already exists in leaves dict.")
         # Check for duplicate points
         duplicate = self.find_duplicate(point, tolerance=tolerance)
@@ -391,17 +448,15 @@ class RCTree:
         parent = node.u
         maxdepth = max([leaf.d for leaf in self.leaves.values()])
         depth = 0
-        # TODO: Check correctness of maxdepth + 1
         for _ in range(maxdepth + 1):
             bbox = node.b
             cut_dimension, cut = self._insert_point_cut(point, bbox)
-            # TODO: Should this be >= or >?
-            if (cut <= bbox[0, cut_dimension]):
+            if cut <= bbox[0, cut_dimension]:
                 leaf = Leaf(x=point, i=index, d=depth)
                 branch = Branch(q=cut_dimension, p=cut, l=leaf, r=node,
                                 n=(leaf.n + node.n))
                 break
-            elif (cut >= bbox[-1, cut_dimension]):
+            elif cut >= bbox[-1, cut_dimension]:
                 leaf = Leaf(x=point, i=index, d=depth)
                 branch = Branch(q=cut_dimension, p=cut, l=node, r=leaf,
                                 n=(leaf.n + node.n))
@@ -453,6 +508,21 @@ class RCTree:
         --------
         nearest: Leaf
                  Leaf nearest to queried point in the tree
+
+        Example:
+        --------
+        # Create RCTree
+        >>> X = np.random.randn(10, 2)
+        >>> tree = rrcf.RCTree(X)
+
+        # Insert new point
+        >>> new_point = np.array([4, 4])
+        >>> tree.insert_point(new_point, index=10)
+
+        # Query tree for point with added noise
+        >>> tree.query(new_point + 1e-5)
+
+        Leaf(10)
         """
         if not isinstance(point, np.ndarray):
             point = np.asarray(point)
@@ -473,12 +543,26 @@ class RCTree:
         --------
         displacement: int
                       Displacement if leaf is removed
+
+        Example:
+        --------
+        # Create RCTree
+        >>> X = np.random.randn(100, 2)
+        >>> tree = rrcf.RCTree(X)
+        >>> new_point = np.array([4, 4])
+        >>> tree.insert_point(new_point, index=100)
+
+        # Compute displacement
+        >>> tree.disp(100)
+
+        12
         """
         if not isinstance(leaf, Leaf):
             try:
                 leaf = self.leaves[leaf]
-            except:
-                raise KeyError('leaf must be a Leaf instance or key to self.leaves')
+            except KeyError:
+                raise KeyError(
+                    'leaf must be a Leaf instance or key to self.leaves')
         # Handle case where leaf is root
         if leaf is self.root:
             return 0
@@ -504,12 +588,26 @@ class RCTree:
         --------
         codisplacement: float
                         Collusive displacement if leaf is removed.
+
+        Example:
+        --------
+        # Create RCTree
+        >>> X = np.random.randn(100, 2)
+        >>> tree = rrcf.RCTree(X)
+        >>> new_point = np.array([4, 4])
+        >>> tree.insert_point(new_point, index=100)
+
+        # Compute collusive displacement
+        >>> tree.codisp(100)
+
+        31.667
         """
         if not isinstance(leaf, Leaf):
             try:
                 leaf = self.leaves[leaf]
-            except:
-                raise KeyError('leaf must be a Leaf instance or key to self.leaves')
+            except KeyError:
+                raise KeyError(
+                    'leaf must be a Leaf instance or key to self.leaves')
         # Handle case where leaf is root
         if leaf is self.root:
             return 0
@@ -547,6 +645,16 @@ class RCTree:
         --------
         bbox: np.ndarray (2 x d)
               Bounding box of all points underneath branch
+
+        Example:
+        --------
+        # Create RCTree and compute bbox
+        >>> X = np.random.randn(10, 3)
+        >>> tree = rrcf.RCTree(X)
+        >>> tree.get_bbox()
+
+        array([[-0.8600458 , -1.69756215, -1.16659065],
+               [ 2.48455863,  1.02869042,  1.09414144]])
         """
         if branch is None:
             branch = self.root
@@ -574,6 +682,23 @@ class RCTree:
         duplicate: Leaf or None
                    If point is a duplicate, returns the leaf containing the point.
                    If point is not a duplicate, return None.
+
+        Example:
+        --------
+        # Create RCTree
+        >>> X = np.random.randn(10, 2)
+        >>> tree = rrcf.RCTree(X)
+
+        # Insert new point
+        >>> new_point = np.array([4, 4])
+        >>> tree.insert_point(new_point, index=10)
+
+        # Search for duplicates
+        >>> tree.find_duplicate((3, 3))
+
+        >>> tree.find_duplicate((4, 4))
+
+        Leaf(10)
         """
         nearest = self.query(point)
         if tolerance is None:
@@ -588,8 +713,8 @@ class RCTree:
         """
         Compute bbox of node based on bboxes of node's children.
         """
-        bbox = np.vstack([np.minimum(node.l.b[0,:], node.r.b[0,:]),
-                          np.maximum(node.l.b[-1,:], node.r.b[-1,:])])
+        bbox = np.vstack([np.minimum(node.l.b[0, :], node.r.b[0, :]),
+                          np.maximum(node.l.b[-1, :], node.r.b[-1, :])])
         return bbox
 
     def _get_bbox_top_down(self, node):
@@ -673,15 +798,15 @@ class RCTree:
         node.b = bbox
         node = node.u
         while node:
-            lt = (bbox[0,:] < node.b[0,:])
-            gt = (bbox[-1,:] > node.b[-1,:])
+            lt = (bbox[0, :] < node.b[0, :])
+            gt = (bbox[-1, :] > node.b[-1, :])
             lt_any = lt.any()
             gt_any = gt.any()
             if lt_any or gt_any:
                 if lt_any:
-                    node.b[0,:][lt] = bbox[0,:][lt]
+                    node.b[0, :][lt] = bbox[0, :][lt]
                 if gt_any:
-                    node.b[-1,:][gt] = bbox[-1,:][gt]
+                    node.b[-1, :][gt] = bbox[-1, :][gt]
             else:
                 break
             node = node.u
@@ -693,10 +818,10 @@ class RCTree:
         """
         while node:
             bbox = self._lr_branch_bbox(node)
-            if not ((node.b[0,:] == point) | (node.b[-1,:] == point)).any():
+            if not ((node.b[0, :] == point) | (node.b[-1, :] == point)).any():
                 break
-            node.b[0,:] = bbox[0,:]
-            node.b[-1,:] = bbox[-1,:]
+            node.b[0, :] = bbox[0, :]
+            node.b[-1, :] = bbox[-1, :]
             node = node.u
 
     def _insert_point_cut(self, point, bbox):
@@ -719,7 +844,9 @@ class RCTree:
 
         Example:
         --------
-        _insert_point_cut(x_inital, bbox)
+        # Generate cut dimension and cut value
+        >>> _insert_point_cut(x_inital, bbox)
+
         (0, 0.9758881798109296)
         """
         # Generate the bounding box
@@ -741,6 +868,7 @@ class RCTree:
         cut = bbox_hat[0, cut_dimension] + span_sum[cut_dimension] - r
         return cut_dimension, cut
 
+
 class Branch:
     """
     Branch of RCTree containing two children and at most one parent.
@@ -756,6 +884,7 @@ class Branch:
     b: Bounding box of points under branch (2 x d)
     """
     __slots__ = ['q', 'p', 'l', 'r', 'u', 'n', 'b']
+
     def __init__(self, q, p, l=None, r=None, u=None, n=0, b=None):
         self.l = l
         self.r = r
@@ -767,6 +896,7 @@ class Branch:
 
     def __repr__(self):
         return "Branch(q={}, p={:.2f})".format(self.q, self.p)
+
 
 class Leaf:
     """
@@ -782,6 +912,7 @@ class Leaf:
     b: Bounding box of point (1 x d)
     """
     __slots__ = ['i', 'd', 'u', 'x', 'n', 'b']
+
     def __init__(self, i, d=None, u=None, x=None, n=1):
         self.u = u
         self.i = i
