@@ -176,7 +176,7 @@ class RCTree:
             # Recursively construct tree on S1
             self._mktree(X, S1, N, I, parent=branch, side='l', depth=depth)
         # Otherwise...
-        else:
+        elif S1.sum() == 1:
             # Create a leaf node from isolated point
             i = np.asscalar(np.flatnonzero(S1))
             leaf = Leaf(i=i, d=depth, u=branch, x=X[i, :], n=N[i])
@@ -198,7 +198,7 @@ class RCTree:
             # Recursively construct tree on S2
             self._mktree(X, S2, N, I, parent=branch, side='r', depth=depth)
         # Otherwise...
-        else:
+        elif S2.sum() == 1:
             # Create a leaf node from isolated point
             i = np.asscalar(np.flatnonzero(S2))
             leaf = Leaf(i=i, d=depth, u=branch, x=X[i, :], n=N[i])
@@ -624,6 +624,8 @@ class RCTree:
                 sibling = parent.r
             else:
                 sibling = parent.l
+            if sibling is None:
+                break
             num_deleted = node.n
             displacement = sibling.n
             result = (displacement / num_deleted)
@@ -713,6 +715,10 @@ class RCTree:
         """
         Compute bbox of node based on bboxes of node's children.
         """
+        if node.l is None:
+            bbox = np.vstack([node.r.b[0, :], node.r.b[-1, :]])
+        if node.r is None:
+            bbox = np.vstack([node.l.b[0, :], node.l.b[-1, :]])
         bbox = np.vstack([np.minimum(node.l.b[0, :], node.r.b[0, :]),
                           np.maximum(node.l.b[-1, :], node.r.b[-1, :])])
         return bbox
@@ -735,11 +741,14 @@ class RCTree:
         root to leaves.
         """
         if isinstance(node, Branch):
-            if node.l:
+            if node.l is None:
+                node.n = node.r.n
+            elif node.r is None:
+                node.n = node.l.n
+            else:
                 self._count_all_top_down(node.l)
-            if node.r:
                 self._count_all_top_down(node.r)
-            node.n = node.l.n + node.r.n
+                node.n = node.l.n + node.r.n
 
     def _count_leaves(self, node):
         """
